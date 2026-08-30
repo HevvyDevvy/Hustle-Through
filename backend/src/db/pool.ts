@@ -7,6 +7,6 @@ export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-pool.on("error", (err) => {
+pool.on("error", (err: Error) => {
   console.error("Unexpected Postgres error", err);
 });
