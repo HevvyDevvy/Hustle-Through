@@ -20,5 +20,5 @@ progressionRouter.get("/me/story-flags", requireAuth, async (req: AuthedRequest,
     "SELECT flag_key, flag_value FROM player_story_flags WHERE player_id = $1",
     [req.playerId]
   );
-  res.json(Object.fromEntries(result.rows.map((r) => [r.flag_key, r.flag_value])));
+  res.json(Object.fromEntries(result.rows.map((r: any) => [r.flag_key, r.flag_value])));
 });
