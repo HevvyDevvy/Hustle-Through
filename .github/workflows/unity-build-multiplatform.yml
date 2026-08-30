@@ -1,0 +1,71 @@
+name: Unity Multi-Platform Build
+
+# Requires:
+#  - A Unity project checked in under /client-unity (this scaffold provides
+#    Assets/Scripts only — you still need to create the actual Unity project
+#    around it in the Editor and commit the rest: Assets/Scenes, ProjectSettings, etc.)
+#  - secrets.UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD (or a Unity Pro serial)
+#  - For iOS signing: secrets.APPLE_CERTIFICATE_BASE64, APPLE_CERTIFICATE_PASSWORD,
+#    APPLE_PROVISIONING_PROFILE_BASE64, APPSTORE_CONNECT_API_KEY, etc.
+#  - For Android signing: secrets.ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASS,
+#    ANDROID_KEY_ALIAS, ANDROID_KEY_PASS
+#  - For store upload: fastlane configured per-platform (not included here —
+#    add Fastfiles under client-unity/fastlane once you're ready to automate
+#    App Store Connect / Google Play uploads)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "client-unity/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build for ${{ matrix.targetPlatform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - targetPlatform: StandaloneWindows64
+            os: windows-latest
+          - targetPlatform: StandaloneOSX
+            os: macos-latest
+          - targetPlatform: Android
+            os: ubuntu-latest
+          - targetPlatform: iOS
+            os: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        with:
+          path: client-unity/Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('client-unity/Assets/**') }}
+          restore-keys: Library-${{ matrix.targetPlatform }}-
+
+      - name: Build Unity project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: client-unity
+          targetPlatform: ${{ matrix.targetPlatform }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-${{ matrix.targetPlatform }}
+          path: build/${{ matrix.targetPlatform }}
+
+  # Once builds succeed, add separate jobs here (or a fastlane-based workflow)
+  # to sign and upload the iOS build to App Store Connect (via App Store Connect
+  # API key) and the Android .aab to Google Play (via a service account JSON) —
+  # both require your own store accounts and are best driven by fastlane match
+  # (iOS) and fastlane supply (Android) once you're ready to automate releases.

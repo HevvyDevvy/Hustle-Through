@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hustle
+      POSTGRES_PASSWORD: hustle_dev_password
+      POSTGRES_DB: hustle_through
+    ports:
+      - "5432:5432"
+    volumes:
+      - hustle_pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./backend/.env
+    ports:
+      - "4000:4000"
+
+volumes:
+  hustle_pg_data:
